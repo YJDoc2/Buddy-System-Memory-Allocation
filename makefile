@@ -1,6 +1,6 @@
 all : list.o buddy_system.o main.o
 	gcc -g ./*.o
-	rm ./*o
+	rm ./*.o
 list.o : list.h list.c
 	gcc -c -g list.c
 

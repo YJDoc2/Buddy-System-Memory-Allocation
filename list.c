@@ -4,92 +4,113 @@
 
 void* get_hole(List *l,int size){
 
+    // If list is empty
     if(l->start == NULL){
         return (void*)-1;
     }
+
+    void *ret = (void*)-1;
+
     Node *prev = l->start;
-    Node *n = l->start;
-    void* loc = (void*)-1;
-    //* Only one node;
+    Node *temp = l->start;
+
+    // Only one node;
     if(l->start->next == NULL){
-        //* No sufficient sized chunk available
         if(l->start->size < size){
-            return loc;
+            // No sufficient sized chunk available
+            return ret;
         }
+
         l->start = NULL;
-        loc = n->loc;
-        free(n);
-        return loc;
+        ret = temp->loc;
+        free(temp);
+        return ret;
     }
     
-    //* More than one node
-    while(n != NULL && n->next != NULL){
-        //* As the list is ordered small -> large
-        if(n->size >= size){
-            prev->next = n->next;
-            loc = n->loc;
-            free(n);
-            return loc;
-        }
-        prev = n;
-        n = n->next;
+    //* Following logic should be imporved, by using a different traversing stratergy.
+
+    // More than one node
+    while(temp->next != NULL && temp->next->size < size){
+        prev = temp;
+        temp = temp->next;
     }
-    if(n != NULL && n->size >= size){
-        prev->next = n->next;
-        loc = n->loc;
-        free(n);
-        return loc;
+    if(temp->next == NULL && temp->size < size){
+        // Last node,not adequate size.
+        return (void*)-1;
     }
-    return (void*)-1;
+    // last node with adequate size
+    if(temp->next == NULL){
+        prev->next = NULL;
+        ret = temp->loc;
+        free(temp);
+        return ret;
+    }
+    // Now we are on Node whose next node is of adequate size.
+    // So move on next
+    // We found adequate sized hole!!!
+    prev = temp;
+    temp = temp->next;
+    
+    prev->next = temp->next;
+    ret = temp->loc;
+    free(temp);
+    return ret;
 }
 
-void add_hole(List *l,int size,void*loc){
-    Node *n = (Node *)malloc(sizeof(Node));
-    n->loc = loc;
-    n->size = size;
-    n->next = NULL;
-    //* List ordering is from small -> large
+void insert_hole(List *l,int size,void*loc){
+    Node *newnode = (Node *)malloc(sizeof(Node));
+    newnode->loc = loc;
+    newnode->size = size;
+    newnode->next = NULL;
+
+    // Empty list
     if(l->start == NULL){
-        l->start = n;
+        l->start = newnode;
         return;
     }
+    // First Node is of size lrger than the one we are inserting
     if(l->start->size > size ){
-        n->next = l->start;
-        l->start = n;
+        newnode->next = l->start;
+        l->start = newnode;
         return;
     }
+    // Traverse and find
     Node* temp = l->start;
     while(temp->next != NULL && temp->next->size <= size){
         temp = temp->next;
     }
-    if(temp->next == NULL){
-        temp->next =n;
-        return;
-    }else{
-        n->next = temp->next;
-        temp->next =n;
-        return;
-    }
+    // Found it!
+    newnode->next = temp->next;
+    temp->next =newnode;
+    return;
+    
 }
 
-void* find_adjecent_hole(List *l,void *loc,int size){
+void* get_adjecent_hole(List *l,void *loc,int size){
 
     Node *temp = l->start;
     Node *prev = l->start;
+
     void * ret = (void*)-1;
+
     while(temp != NULL && temp->size != size){
         prev = temp;
         temp = temp->next;
     }
+    // No node with given size is found
     if(temp == NULL) {
         return (void*)-1;
     }
+
     Chunk *in = (Chunk *)loc;
+    // There can be multiple holes with same size.
+    // Here we check if any of them is adjecent and return first one found so.
     while(temp != NULL && temp->size == size){
-        prev = temp;
         Chunk *t = (Chunk *)temp->loc;
-        if(in-in->size == t || in + in->size == t){
+        if(in - in->size == t || in + in->size == t){
+            // Found an adjecent Node Hole.
             if(l->start == temp){
+                // If the Fisrt Node itself in list is adjecent
                 l->start = temp->next;
             }else{
                 prev->next = temp->next;
@@ -98,8 +119,10 @@ void* find_adjecent_hole(List *l,void *loc,int size){
             free(temp);
             return ret;
         }
+        prev = temp;
         temp = temp->next;
     }
+    // No Hole of required size was adjecent.
     return (void*)-1;
 
 }
