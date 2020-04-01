@@ -1,114 +1,73 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include<string.h>
 #include "memory.h"
+#include "list.h"
 #include "buddy_system.h"
 
-Memory mem_free,mem_alloc;
+void *mem;
+int max_size;
+List holes;
 
-static Node* get_chunk(int size){
-    //* Reverse traversal
-    Node* temp = mem_free.end;
-    while(temp != NULL){
-        if(temp->prev == NULL){
-            //* At start of the list
-            mem_free.start = mem_free.end = NULL;
-            return temp;
-        }
-        if(temp->size>=size && temp->prev->size <size){
-            temp->prev->next= temp->next;
-            temp->next->prev = temp->prev;
-            return temp;
-        }else{
-            temp = temp->prev;
-        }
-        
-    }
-}
-static void combine_chunks(Node *n,Node *bound){
-    if(bound->size == n->size){
-        bound->size = bound->size *2;
-        //* Remove the 'bound' node from the mem_free list
-        bound->prev->next = bound->next;
-        bound->next->prev = bound->prev;
-        free(n);
-        combine_chunks(bound,bound->prev);
-    }else{
-        insert_node(mem_free,n);
-    }
-}
-
-void make_mem(int max_size){
-    mem_free = get_mem(max_size);
+void make_mem(int max){
+    max_size = max;
+    mem = calloc(max_size,sizeof(Chunk));
+    ((Chunk*)mem)->size = max_size;
+    ((Chunk*)mem)->pid = -1;
 }
 
 void* alloc(int pid,int size){
-    if(size > mem_free.max_size){
+    Chunk *temp = (Chunk*)mem;
+    //* First Time alloc
+    if(temp->size != max_size){
+        //* it ain't the first alloc!
+        temp = (Chunk*)get_hole(&holes,size);
+        if(temp == (Chunk *)-1) return (void*)-1;   
+    }
+    while(temp->size/2 >= size){
+        add_hole(&holes,temp->size/2,(void*)(temp+temp->size/2));
+        (temp + temp->size/2)->pid = -1;
+        temp->size = (temp + temp->size/2)->size =temp->size/2;
+    }
+    if(temp->size >= size){
+        temp->pid = pid;
+        return temp;
+    }else{
         return (void*)-1;
     }
-    Node* temp = get_chunk(size);
-    int tsize = temp->size;
-    while(1){
-        if(tsize/2 > size){
-            Node *t = get_node(tsize/2);
-            insert_node(mem_free,t);
-            temp->size = tsize/2;
-            tsize = tsize/2;
-        }else{
-            //* Now temp is the node that has least possible size to accomodate process
-            break;    
-        }
-    }
-    temp->pid = pid;
-    temp->occupied = 1;
-    insert_node(mem_alloc,temp);
-    return (void*)temp;
-}
-
-void delloc(void *n){
-    Node *node = (Node *)n;
-    Node *temp = mem_free.start;
-
-    //* remove from mem_alloc
-    if(mem_alloc.start == node){
-        mem_alloc.start = node->next;
-        node->next->prev = NULL;
-    }else if(mem_alloc.end == node){
-        mem_alloc.end = node->prev;
-        node->prev->next = NULL;
-    }else{
-        node->prev->next = node->next;
-    node->next->prev = node->prev;
-    }
     
-    while(temp != NULL && temp->next != NULL){
-        if(temp->next->size < node->size){
-            break;
-        }else{
-            temp = temp->next;
-        }
-    }
-    combine_chunks(n,temp);
-    return;
 }
 
-void print_free(){
+int delloc(void *n){
+    if(n == (void*)-1)return -1;
+    Chunk *d = (Chunk*)n;
+    d->pid = -1;
 
-    printf("Printing Free memory chunk status : \n");
-    Node* temp = mem_free.start;
-    while(temp != NULL){
-        printf("%d\t",temp->size);
-        temp = temp->next;
+    Chunk *temp = (Chunk*)find_adjecent_hole(&holes,d,d->size);
+    while(temp != (Chunk*)-1){
+        int size = d->size;
+        void *loc = temp > d ? d : temp;
+        memset(loc,0,size*2);
+        ((Chunk*)loc)->pid = -1;
+        ((Chunk*)loc)->size = size*2;
+        temp = (Chunk*)find_adjecent_hole(&holes,d,d->size);
     }
-    printf(" ;\n");
+    d->pid = -1;
+    add_hole(&holes,d->size,n);
+    
+        
 }
 
-void print_alloc(){
+void print_stat(){
 
-    printf("Printing Allocated memory chunk status : \n");
-    Node* temp = mem_alloc.start;
-    while(temp != NULL){
-        printf("%d\t",temp->size);
-        temp = temp->next;
+    printf("Printing current status of memory : \n");
+    Chunk *temp = (Chunk *)mem;
+    int size =0;
+    while(1){
+        printf("%d:%d\t",temp->pid,temp->size);
+        size += temp->size;
+        if(size >= max_size)break;
+        temp = (temp+temp->size);
     }
-    printf(" ;\n");
+    printf("\n");
 }
