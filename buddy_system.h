@@ -6,11 +6,14 @@
 void make_mem(int max_size);
 
 //* Function to allocate memory
-void* alloc(int pid,int size);
+int allocate_page(int pid, int size);
 
 //* Function to de-allocate memory
-int delloc(void *node);
+int free_page(int pid);
 
+//* Get pointer to process with given pid, loads process in maimory if in
+//* virtual memory
+void *get_process(int pid);
 //* Iterates through memory Chunks and prints status of each chunk.
 void print_stat();
 
