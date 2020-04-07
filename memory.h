@@ -3,7 +3,7 @@
 
 typedef struct{
     int size;
-    char pid;
+    int pid;
 } Chunk;
 
 #endif
