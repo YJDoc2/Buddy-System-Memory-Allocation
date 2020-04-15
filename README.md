@@ -21,6 +21,7 @@ COA Mini project for SE sem 4
 </tr>
 </tbody>
 </table>
+
 ### About
 The buddy system is a memory allocation and management algorithm that manages memory in power of two increments. Assume the memory size is 2U, suppose a size of S is required.
 If 2U-1<S<=2U: Allocate the whole block
