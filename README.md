@@ -23,7 +23,6 @@ COA Mini project for SE sem 4
 </table>
 ### About
 The buddy system is a memory allocation and management algorithm that manages memory in power of two increments. Assume the memory size is 2U, suppose a size of S is required.
-
 If 2U-1<S<=2U: Allocate the whole block
 Else: Recursively divide the block equally and test the condition at each time, when it satisfies, allocate the block and get out the loop.
 
@@ -32,5 +31,3 @@ Buddy allocation system is an algorithm in which a larger memory block is divide
 
 ### Implementation and efficiency
 In comparison to other simpler techniques such as dynamic allocation, the buddy memory system has little external fragmentation, and allows for compaction of memory with little overhead. The buddy method of freeing memory is fast, with the maximal number of compactions required equal to log2(highest order). Typically the buddy memory allocation system is implemented with the use of a binary tree to represent used or unused split memory blocks. The "buddy" of each block can be found with an exclusive OR of the block's address and the block's size.
-
-However, there still exists the problem of internal fragmentation – memory wasted because the memory requested is a little larger than a small block, but a lot smaller than a large block. Because of the way the buddy memory allocation technique works, a program that requests 66 K of memory would be allocated 128 K, which results in a waste of 62 K of memory. This problem can be solved by slab allocation, which may be layered on top of the more coarse buddy allocator to provide more fine-grained allocation.
